@@ -17,7 +17,7 @@ ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB", "WAIT"]
 
 
 class QLearningAgent:
-    def __init__(self, state_size, action_size, alpha=0.1, gamma=0.9, epsilon=0.1, agent_id=0):
+    def __init__(self, state_size, action_size, alpha=0.3, gamma=0.7, epsilon=0.1, agent_id=0):
         self.state_size = state_size
         self.action_size = action_size
         self.q_table = np.zeros((state_size, action_size))  # Q-Table
@@ -62,12 +62,12 @@ class BombermanGame(arcade.Window):
         self.agent_positions = []
         self.bombs = []
         self.scores = [0] * num_agents
-        self.lives = [1] * num_agents
+        self.lives = [3] * num_agents
         self.game_over = [False] * num_agents  # Initialize as a list
         self.current_episode = 0
         self.max_episodes = max_episodes
         self.time_accumulator = 0  # Pour ralentir la vitesse du jeu
-        self.update_interval = 0.5  # Temps entre chaque mise à jour (en secondes)
+        self.update_interval = 0.1  # Temps entre chaque mise à jour (en secondes)
 
         # Initialiser les agents Q-Learning
         self.agents = [
@@ -82,23 +82,41 @@ class BombermanGame(arcade.Window):
     def setup(self):
         """Initialisation du jeu."""
         self.grid = []
+
+        # Define a "buffer zone" around agent spawn positions (for example, 3x3 area around each spawn point)
+        buffer_zone_size = 1
+
+        # Create the grid with obstacles while leaving space around the agent spawn points
         for row in range(ROWS):
             row_data = []
             for col in range(COLS):
-                if random.random() < 0.2:
+                # Set a condition for leaving empty space around spawn points
+                if any(
+                        (row >= spawn_row - buffer_zone_size and row <= spawn_row + buffer_zone_size and
+                         col >= spawn_col - buffer_zone_size and col <= spawn_col + buffer_zone_size)
+                        for spawn_row, spawn_col in self.agent_positions
+                ):
+                    row_data.append(EMPTY)  # Leave space around spawn points
+                elif random.random() < 0.2:
                     row_data.append(DESTRUCTIBLE if random.random() < 0.7 else INDESTRUCTIBLE)
                 else:
                     row_data.append(EMPTY)
             self.grid.append(row_data)
 
-        # Spawn agents in the corners
+        # Spawn agents in the corners but leave a buffer zone
         corners = [(0, 0), (0, COLS - 1), (ROWS - 1, 0), (ROWS - 1, COLS - 1)]
         self.agent_positions = []
 
-        # Assign each agent to a corner
+        # Assign each agent to a corner while ensuring the buffer zone is respected
         for i in range(self.num_agents):
             corner = corners[i % len(corners)]  # This ensures we reuse corners if more than 4 agents
             self.agent_positions.append(corner)
+
+            # Ensure a buffer zone around each spawn position (mark the grid with empty space)
+            for r in range(corner[0] - buffer_zone_size, corner[0] + buffer_zone_size + 1):
+                for c in range(corner[1] - buffer_zone_size, corner[1] + buffer_zone_size + 1):
+                    if 0 <= r < ROWS and 0 <= c < COLS:
+                        self.grid[r][c] = EMPTY  # Clear any obstacles in the buffer zone
 
         self.scores = [0] * self.num_agents
         self.lives = [1] * self.num_agents
@@ -135,8 +153,8 @@ class BombermanGame(arcade.Window):
             return -1
         elif action == 4:  # PLACE_BOMB
             self.bombs.append({"row": row, "col": col, "timer": 3, "owner": agent_index})
-            self.scores[agent_index] += 10
-            return 10
+            self.scores[agent_index] -= 10
+            return -10
         elif action == 5:
             self.agent_positions[agent_index] = (row, col)
             self.scores[agent_index] += 0
@@ -196,7 +214,9 @@ class BombermanGame(arcade.Window):
         for bomb in self.bombs:
             x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
             y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
-            arcade.draw_circle_filled(x, y, CELL_SIZE // 4, arcade.color.ASH_GREY)
+            color = bomb.get("color",
+                             arcade.color.ASH_GREY)  # Default to gray, change to orange and red before explosion
+            arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
 
         for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
             arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
@@ -211,6 +231,10 @@ class BombermanGame(arcade.Window):
 
         for bomb in self.bombs[:]:
             bomb["timer"] -= self.update_interval
+            if bomb["timer"] <= 2:  # Change bomb color to orange just before red
+                bomb["color"] = arcade.color.ORANGE  # Change to orange
+            if bomb["timer"] <= 1:  # Change to red just before explosion
+                bomb["color"] = arcade.color.RED  # Change to red
             if bomb["timer"] <= 0:
                 self.explode_bomb(bomb)
                 self.bombs.remove(bomb)
