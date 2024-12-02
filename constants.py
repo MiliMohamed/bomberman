@@ -1,0 +1,11 @@
+# Dimensions de la fenêtre
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+TILE_SIZE = 40
+ROWS = SCREEN_HEIGHT // TILE_SIZE
+COLS = SCREEN_WIDTH // TILE_SIZE
+
+# Constantes des types de murs
+EMPTY = 0
+DESTRUCTIBLE = 1
+INDESTRUCTIBLE = 2
