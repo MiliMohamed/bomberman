@@ -48,6 +48,7 @@ class QLearningAgent:
         try:
             self.q_table = np.load(filename)
             print(f"Q-Table chargée depuis {filename}")
+            print(self.q_table)
         except FileNotFoundError:
             print(f"Fichier {filename} introuvable. Utilisation d'une nouvelle Q-Table.")
 
@@ -67,7 +68,7 @@ class BombermanGame(arcade.Window):
         self.current_episode = 0
         self.max_episodes = max_episodes
         self.time_accumulator = 0  # Pour ralentir la vitesse du jeu
-        self.update_interval = 0.1  # Temps entre chaque mise à jour (en secondes)
+        self.update_interval = 0.3  # Temps entre chaque mise à jour (en secondes)
 
         # Initialiser les agents Q-Learning
         self.agents = [
@@ -131,7 +132,7 @@ class BombermanGame(arcade.Window):
     def perform_action(self, agent_index, action):
         """Effectue une action pour un agent."""
         if self.game_over[agent_index]:
-            return -100  # Pénalité pour agent mort
+            return -1000  # Pénalité pour agent mort
 
         row, col = self.agent_positions[agent_index]
 
@@ -157,17 +158,17 @@ class BombermanGame(arcade.Window):
             return -10
         elif action == 5:
             self.agent_positions[agent_index] = (row, col)
-            self.scores[agent_index] += 0
-            return 0
+            self.scores[agent_index] -= 1
+            return -1
         return -10  # Récompense négative pour une action invalide
 
     def explode_bomb(self, bomb):
         """Gère l'explosion d'une bombe."""
         row, col = bomb["row"], bomb["col"]
-        affected_positions = [(row, col)]
+        affected_positions = [(row, col)]  # Add the bomb's position as affected
 
         for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            for i in range(1, 3):
+            for i in range(1, 3):  # Explosion range
                 r, c = row + dr * i, col + dc * i
                 if 0 <= r < ROWS and 0 <= c < COLS:
                     if self.grid[r][c] == INDESTRUCTIBLE:
@@ -177,11 +178,15 @@ class BombermanGame(arcade.Window):
                         self.grid[r][c] = EMPTY
                         break
 
+        # Mark affected positions for explosions
+        self.explosion_positions = affected_positions
+
+        # Apply damage to agents in affected positions
         for i, (arow, acol) in enumerate(self.agent_positions):
             if (arow, acol) in affected_positions and not self.game_over[i]:
                 self.lives[i] -= 1
                 self.scores[i] -= 1000
-                print(f"Agent {i} died in an explosion")
+                print(f"Agent {i+1} died in an explosion")
                 if self.lives[i] <= 0:
                     self.game_over[i] = True
 
@@ -192,6 +197,10 @@ class BombermanGame(arcade.Window):
     def on_draw(self):
         """Affiche la grille et les statistiques."""
         self.clear()
+
+        # Clear explosion positions at the start of each frame
+        self.explosion_positions = []
+
         for row in range(ROWS):
             for col in range(COLS):
                 x = col * CELL_SIZE + CELL_SIZE // 2
@@ -211,6 +220,7 @@ class BombermanGame(arcade.Window):
                 color = arcade.color.BLUE if i == 0 else arcade.color.GREEN
                 arcade.draw_circle_filled(x, y, CELL_SIZE // 3, color)
 
+        # Draw bombs
         for bomb in self.bombs:
             x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
             y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
@@ -218,6 +228,16 @@ class BombermanGame(arcade.Window):
                              arcade.color.ASH_GREY)  # Default to gray, change to orange and red before explosion
             arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
 
+        # Draw red diamonds on explosion positions for this frame only
+        for (row, col) in self.explosion_positions:
+            x = col * CELL_SIZE + CELL_SIZE // 2
+            y = row * CELL_SIZE + CELL_SIZE // 2
+            arcade.draw_polygon_filled(
+                [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
+                arcade.color.RED
+            )
+
+        # Draw scores and lives
         for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
             arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
                              10, SCREEN_HEIGHT - 20 * (i + 1), arcade.color.WHITE, font_size=12)
@@ -260,4 +280,5 @@ class BombermanGame(arcade.Window):
 if __name__ == "__main__":
     game = BombermanGame(num_agents=4)
     game.setup()
+    print()
     arcade.run()
