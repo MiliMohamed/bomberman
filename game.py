@@ -13,6 +13,7 @@ COLS = SCREEN_WIDTH // CELL_SIZE
 EMPTY = 0
 DESTRUCTIBLE = 1
 INDESTRUCTIBLE = 2
+BOMB = 3
 ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB", "WAIT"]
 
 class BombermanGame(arcade.Window):
@@ -116,6 +117,7 @@ class BombermanGame(arcade.Window):
             return -1
         elif action == 4:  # PLACE_BOMB
             self.bombs.append({"row": row, "col": col, "timer": 3, "owner": agent_index})
+            self.grid[row][col] = BOMB
             self.scores[agent_index] -= 10
             return -10
         elif action == 5:
