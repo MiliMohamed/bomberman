@@ -13,7 +13,7 @@ COLS = SCREEN_WIDTH // CELL_SIZE
 EMPTY = 0
 DESTRUCTIBLE = 1
 INDESTRUCTIBLE = 2
-ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB"]
+ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB", "WAIT"]
 
 
 class QLearningAgent:
@@ -62,8 +62,8 @@ class BombermanGame(arcade.Window):
         self.agent_positions = []
         self.bombs = []
         self.scores = [0] * num_agents
-        self.lives = [3] * num_agents
-        self.game_over = [False] * num_agents
+        self.lives = [1] * num_agents
+        self.game_over = [False] * num_agents  # Initialize as a list
         self.current_episode = 0
         self.max_episodes = max_episodes
         self.time_accumulator = 0  # Pour ralentir la vitesse du jeu
@@ -93,9 +93,9 @@ class BombermanGame(arcade.Window):
 
         self.agent_positions = [(1, 1 + i * 3) for i in range(self.num_agents)]
         self.scores = [0] * self.num_agents
-        self.lives = [3] * self.num_agents
+        self.lives = [1] * self.num_agents
         self.bombs = []
-        self.game_over = [False] * self.num_agents
+        self.game_over = [False] * self.num_agents  # Reset game_over list
 
     def get_state(self, agent_index):
         """Convertit la position actuelle d'un agent en un état unique."""
@@ -124,6 +124,9 @@ class BombermanGame(arcade.Window):
         elif action == 4:  # PLACE_BOMB
             self.bombs.append({"row": row, "col": col, "timer": 3, "owner": agent_index})
             return 0  # Pas de récompense immédiate pour poser une bombe
+        elif action == 5:
+            self.agent_positions[agent_index] = (row, col)
+            return 0
         return -1  # Récompense négative pour une action invalide
 
     def explode_bomb(self, bomb):
@@ -147,6 +150,10 @@ class BombermanGame(arcade.Window):
                 self.lives[i] -= 1
                 if self.lives[i] <= 0:
                     self.game_over[i] = True
+
+    def count_active_agents(self):
+        """Compte le nombre d'agents encore en vie."""
+        return sum(1 for life in self.lives if life > 0)
 
     def on_draw(self):
         """Affiche la grille et les statistiques."""
@@ -173,10 +180,10 @@ class BombermanGame(arcade.Window):
         for bomb in self.bombs:
             x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
             y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
-            arcade.draw_circle_filled(x, y, CELL_SIZE // 4, arcade.color.YELLOW)
+            arcade.draw_circle_filled(x, y, CELL_SIZE // 4, arcade.color.ASH_GREY)
 
         for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
-            arcade.draw_text(f"Agent {i+1} - Score: {score}, Lives: {lives}",
+            arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
                              10, SCREEN_HEIGHT - 20 * (i + 1), arcade.color.WHITE, font_size=12)
 
     def on_update(self, delta_time):
@@ -201,15 +208,16 @@ class BombermanGame(arcade.Window):
             next_state = self.get_state(i)
             self.agents[i].update(current_state, action, reward, next_state)
 
-        if all(self.game_over):
+        # Check if exactly one agent has game_over == False
+        if self.game_over.count(False) == 1:
             print(f"Épisode {self.current_episode + 1} terminé. Réinitialisation du jeu.")
             self.current_episode += 1
             for i, agent in enumerate(self.agents):
-                agent.save_q_table(f"agent_{i+1}_qtable.npy")
+                agent.save_q_table(f"agent_{i + 1}_qtable.npy")
             self.setup()
 
 
 if __name__ == "__main__":
-    game = BombermanGame(num_agents=3)
+    game = BombermanGame(num_agents=2)
     game.setup()
     arcade.run()
