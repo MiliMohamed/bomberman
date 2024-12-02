@@ -34,6 +34,6 @@ class QLearningAgent:
         try:
             self.q_table = np.load(Q_TABLE_LOCATION + filename)
             print(f"Q-Table chargée depuis {filename}")
-            print(self.q_table)
+            #print(self.q_table)
         except FileNotFoundError:
             print(f"Fichier {filename} introuvable. Utilisation d'une nouvelle Q-Table.")

@@ -99,31 +99,37 @@ class BombermanGame(arcade.Window):
 
         row, col = self.agent_positions[agent_index]
 
-        if action == 0 and row > 0 and self.grid[row - 1][col] == EMPTY:  # UP
+        def is_cell_occupied_by_another_agent(target_row, target_col):
+            for i, (other_row, other_col) in enumerate(self.agent_positions):
+                if i != agent_index and (other_row, other_col) == (target_row, target_col):
+                    return True
+            return False
+
+        if action == 0 and row > 0 and self.grid[row - 1][col] == EMPTY and not is_cell_occupied_by_another_agent(row - 1, col):  # UP
             self.agent_positions[agent_index] = (row - 1, col)
             self.scores[agent_index] -= 1
-            return -1  # Récompense pour mouvement valide
-        elif action == 1 and row < ROWS - 1 and self.grid[row + 1][col] == EMPTY:  # DOWN
+            return 1  # Récompense pour mouvement valide
+        elif action == 1 and row < ROWS - 1 and self.grid[row + 1][col] == EMPTY and not is_cell_occupied_by_another_agent(row + 1, col):  # DOWN
             self.agent_positions[agent_index] = (row + 1, col)
             self.scores[agent_index] -= 1
-            return -1
-        elif action == 2 and col > 0 and self.grid[row][col - 1] == EMPTY:  # LEFT
+            return 1
+        elif action == 2 and col > 0 and self.grid[row][col - 1] == EMPTY and not is_cell_occupied_by_another_agent(row, col - 1):  # LEFT
             self.agent_positions[agent_index] = (row, col - 1)
             self.scores[agent_index] -= 1
-            return -1
-        elif action == 3 and col < COLS - 1 and self.grid[row][col + 1] == EMPTY:  # RIGHT
+            return 1
+        elif action == 3 and col < COLS - 1 and self.grid[row][col + 1] == EMPTY and not is_cell_occupied_by_another_agent(row, col + 1):  # RIGHT
             self.agent_positions[agent_index] = (row, col + 1)
             self.scores[agent_index] -= 1
-            return -1
+            return 1
         elif action == 4:  # PLACE_BOMB
             self.bombs.append({"row": row, "col": col, "timer": 3, "owner": agent_index})
             self.grid[row][col] = BOMB
             self.scores[agent_index] -= 10
-            return -10
+            return 0
         elif action == 5:
             self.agent_positions[agent_index] = (row, col)
             self.scores[agent_index] -= 1
-            return -1
+            return 0
         return -10  # Récompense négative pour une action invalide
 
     def explode_bomb(self, bomb):
@@ -235,7 +241,7 @@ class BombermanGame(arcade.Window):
 
         # Check if exactly one agent has game_over == False or if all agents are game_over == True
         if self.game_over.count(False) == 1 or all(self.game_over):
-            print(f"Épisode {self.current_episode + 1} terminé. Réinitialisation du jeu.\n")
+            print(f"Partie {self.current_episode + 1} terminé. Réinitialisation du jeu.\n")
             self.current_episode += 1
             for i, agent in enumerate(self.agents):
                 agent.save_q_table(f"agent_{i + 1}_qtable.npy")
