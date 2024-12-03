@@ -7,7 +7,7 @@ from bomb import Bomb
 # Dimensions de la fenêtre
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-CELL_SIZE = 40
+CELL_SIZE = 40 # 40 default
 ROWS = SCREEN_HEIGHT // CELL_SIZE
 COLS = SCREEN_WIDTH // CELL_SIZE
 
@@ -16,6 +16,7 @@ EMPTY = 0
 DESTRUCTIBLE = 1
 INDESTRUCTIBLE = 2
 BOMB = 3
+ITEM = 4
 ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB", "WAIT"]
 
 class BombermanGame(arcade.Window):
@@ -33,7 +34,7 @@ class BombermanGame(arcade.Window):
         self.current_episode = 0
         self.max_episodes = max_episodes
         self.time_accumulator = 0  # Pour ralentir la vitesse du jeu
-        self.update_interval = 0.5  # Temps entre chaque mise à jour (en secondes)
+        self.update_interval = 0.1  # Temps entre chaque mise à jour (en secondes)
 
         # Initialiser les agents Q-Learning
         self.agents = [
