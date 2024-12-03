@@ -180,12 +180,82 @@ class BombermanGame(arcade.Window):
         """Compte le nombre d'agents encore en vie."""
         return sum(1 for life in self.lives if life > 0)
 
+    # def on_draw(self):
+    #     """Affiche la grille et les statistiques."""
+    #     self.clear()
+    #     # for bomb in self.bombs:
+    #     #     print(f"Bom exploding in {bomb.timer} at {bomb.col} {bomb.row}")
+    #
+    #     # Clear explosion positions at the start of each frame
+    #     self.explosion_positions = []
+    #
+    #     for row in range(ROWS):
+    #         for col in range(COLS):
+    #             x = col * CELL_SIZE + CELL_SIZE // 2
+    #             y = row * CELL_SIZE + CELL_SIZE // 2
+    #             if self.grid[row][col] == DESTRUCTIBLE:
+    #                 arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.RED)
+    #             elif self.grid[row][col] == INDESTRUCTIBLE:
+    #                 arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.GRAY)
+    #             else:
+    #                 arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.BLACK)
+    #                 arcade.draw_rectangle_outline(x, y, CELL_SIZE, CELL_SIZE, arcade.color.WHITE)
+    #
+    #     for i, (row, col) in enumerate(self.agent_positions):
+    #         if not self.game_over[i]:
+    #             x = col * CELL_SIZE + CELL_SIZE // 2
+    #             y = row * CELL_SIZE + CELL_SIZE // 2
+    #             color = arcade.color.BLUE
+    #             arcade.draw_circle_filled(x, y, CELL_SIZE // 3, color)
+    #             arcade.draw_text(f"{i+1}", x - CELL_SIZE // 6, y - CELL_SIZE // 6, arcade.color.WHITE, font_size=12)
+    #
+    #     # Draw bombs
+    #     for bomb in self.bombs:
+    #         x = bomb.col * CELL_SIZE + CELL_SIZE // 2
+    #         y = bomb.row * CELL_SIZE + CELL_SIZE // 2
+    #
+    #         if bomb.timer == 1:
+    #             color = arcade.color.RED
+    #             arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+    #         elif bomb.timer == 2:
+    #             color = arcade.color.ORANGE
+    #             arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+    #         elif bomb.timer == 0:
+    #             pass #explosion are drawn below
+    #         else:
+    #             color = arcade.color.ASH_GREY
+    #             arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+    #
+    #         #arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+    #
+    #         if bomb.timer == 0:
+    #             arcade.draw_polygon_filled(
+    #                      [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
+    #                      arcade.color.RED)
+    #     # for bomb in self.bombs:
+    #     #     x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
+    #     #     y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
+    #     #     color = bomb.get("color",
+    #     #                      arcade.color.ASH_GREY)  # Default to gray, change to orange and red before explosion
+    #     #     arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+    #     #
+    #     # # Draw red diamonds on explosion positions for this frame only
+    #     # for (row, col) in self.explosion_positions:
+    #     #     x = col * CELL_SIZE + CELL_SIZE // 2
+    #     #     y = row * CELL_SIZE + CELL_SIZE // 2
+    #     #     arcade.draw_polygon_filled(
+    #     #         [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
+    #     #         arcade.color.RED
+    #     #     )
+    #
+    #     # Draw scores and lives
+    #     for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
+    #         arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
+    #                          10, SCREEN_HEIGHT - 20 * (i + 1), arcade.color.WHITE, font_size=12)
+
     def on_draw(self):
         """Affiche la grille et les statistiques."""
         self.clear()
-        # for bomb in self.bombs:
-        #     print(f"Bom exploding in {bomb.timer} at {bomb.col} {bomb.row}")
-
         # Clear explosion positions at the start of each frame
         self.explosion_positions = []
 
@@ -207,7 +277,7 @@ class BombermanGame(arcade.Window):
                 y = row * CELL_SIZE + CELL_SIZE // 2
                 color = arcade.color.BLUE
                 arcade.draw_circle_filled(x, y, CELL_SIZE // 3, color)
-                arcade.draw_text(f"{i+1}", x - CELL_SIZE // 6, y - CELL_SIZE // 6, arcade.color.WHITE, font_size=12)
+                arcade.draw_text(f"{i + 1}", x - CELL_SIZE // 6, y - CELL_SIZE // 6, arcade.color.WHITE, font_size=12)
 
         # Draw bombs
         for bomb in self.bombs:
@@ -216,32 +286,56 @@ class BombermanGame(arcade.Window):
 
             if bomb.timer == 1:
                 color = arcade.color.RED
+                arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
             elif bomb.timer == 2:
                 color = arcade.color.ORANGE
+                arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+            elif bomb.timer == 0:
+                pass  # Explosion will be drawn below
             else:
                 color = arcade.color.ASH_GREY
+                arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
 
-            arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
-
+            # When the bomb explodes, draw explosion
             if bomb.timer == 0:
+                # Draw explosion for the bomb's position
                 arcade.draw_polygon_filled(
-                         [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
-                         arcade.color.RED)
-        # for bomb in self.bombs:
-        #     x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
-        #     y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
-        #     color = bomb.get("color",
-        #                      arcade.color.ASH_GREY)  # Default to gray, change to orange and red before explosion
-        #     arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
-        #
-        # # Draw red diamonds on explosion positions for this frame only
-        # for (row, col) in self.explosion_positions:
-        #     x = col * CELL_SIZE + CELL_SIZE // 2
-        #     y = row * CELL_SIZE + CELL_SIZE // 2
-        #     arcade.draw_polygon_filled(
-        #         [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
-        #         arcade.color.RED
-        #     )
+                    [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4),
+                     (x - CELL_SIZE // 4, y)],
+                    arcade.color.RED
+                )
+
+                # Directions for explosion (right, left, down, up)
+                directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                power = bomb.power  # How far the explosion spreads
+
+                # Draw explosion for neighboring cells based on bomb power
+                for dr, dc in directions:
+                    for i in range(1, power + 1):  # Explosion spreads based on bomb power
+                        r, c = bomb.row + dr * i, bomb.col + dc * i
+
+                        # Ensure the position is within bounds of the grid
+                        if 0 <= r < ROWS and 0 <= c < COLS:
+                            # Draw explosion at the affected position
+                            affected_x = c * CELL_SIZE + CELL_SIZE // 2
+                            affected_y = r * CELL_SIZE + CELL_SIZE // 2
+                            arcade.draw_polygon_filled(
+                                [(affected_x, affected_y - CELL_SIZE // 4),
+                                 (affected_x + CELL_SIZE // 4, affected_y),
+                                 (affected_x, affected_y + CELL_SIZE // 4),
+                                 (affected_x - CELL_SIZE // 4, affected_y)],
+                                arcade.color.RED
+                            )
+
+                            # If destructible object is hit, destroy it and stop the explosion in that direction
+                            if self.grid[r][c] == DESTRUCTIBLE:
+                                self.grid[r][c] = EMPTY  # Destroy the object
+                                self.scores[bomb.owner] += REWARD_DESTROY_OBJECT
+                                break  # Stop explosion in this direction
+
+                            # If indestructible object is hit, stop the explosion in that direction
+                            if self.grid[r][c] == INDESTRUCTIBLE:
+                                break  # Stop explosion in this direction
 
         # Draw scores and lives
         for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
@@ -258,8 +352,9 @@ class BombermanGame(arcade.Window):
         for bomb in self.bombs[:]:
             bomb.timer -= 1
             #bomb.timer -= self.update_interval
-            if bomb.timer <= 0:
+            if bomb.timer == 0:
                 self.explode_bomb(bomb)
+            if bomb.timer < 0:
                 self.bombs.remove(bomb)
 
         # for bomb in self.bombs[:]:
