@@ -1,6 +1,8 @@
 import arcade
 import random
-from agent import QLearningAgent
+from agent import QLearningAgent, REWARD_DEATH, REWARD_CORRECT_MOVE, REWARD_INCORRECT_MOVE, REWARD_SUICIDE, REWARD_KILL, \
+    REWARD_DESTROY_OBJECT
+from bomb import Bomb
 
 # Dimensions de la fenêtre
 SCREEN_WIDTH = 800
@@ -31,7 +33,7 @@ class BombermanGame(arcade.Window):
         self.current_episode = 0
         self.max_episodes = max_episodes
         self.time_accumulator = 0  # Pour ralentir la vitesse du jeu
-        self.update_interval = 0.3  # Temps entre chaque mise à jour (en secondes)
+        self.update_interval = 0.5  # Temps entre chaque mise à jour (en secondes)
 
         # Initialiser les agents Q-Learning
         self.agents = [
@@ -56,8 +58,8 @@ class BombermanGame(arcade.Window):
             for col in range(COLS):
                 # Set a condition for leaving empty space around spawn points
                 if any(
-                        (row >= spawn_row - buffer_zone_size and row <= spawn_row + buffer_zone_size and
-                         col >= spawn_col - buffer_zone_size and col <= spawn_col + buffer_zone_size)
+                        (spawn_row - buffer_zone_size <= row <= spawn_row + buffer_zone_size and
+                         spawn_col - buffer_zone_size <= col <= spawn_col + buffer_zone_size)
                         for spawn_row, spawn_col in self.agent_positions
                 ):
                     row_data.append(EMPTY)  # Leave space around spawn points
@@ -95,7 +97,7 @@ class BombermanGame(arcade.Window):
     def perform_action(self, agent_index, action):
         """Effectue une action pour un agent."""
         if self.game_over[agent_index]:
-            return -1000  # Pénalité pour agent mort
+            return REWARD_DEATH  # Pénalité pour agent mort
 
         row, col = self.agent_positions[agent_index]
 
@@ -107,38 +109,43 @@ class BombermanGame(arcade.Window):
 
         if action == 0 and row > 0 and self.grid[row - 1][col] == EMPTY and not is_cell_occupied_by_another_agent(row - 1, col):  # UP
             self.agent_positions[agent_index] = (row - 1, col)
-            self.scores[agent_index] -= 1
-            return 1  # Récompense pour mouvement valide
+            self.scores[agent_index] += REWARD_CORRECT_MOVE
+            return REWARD_CORRECT_MOVE  # Récompense pour mouvement valide
         elif action == 1 and row < ROWS - 1 and self.grid[row + 1][col] == EMPTY and not is_cell_occupied_by_another_agent(row + 1, col):  # DOWN
             self.agent_positions[agent_index] = (row + 1, col)
-            self.scores[agent_index] -= 1
-            return 1
+            self.scores[agent_index] += REWARD_CORRECT_MOVE
+            return REWARD_CORRECT_MOVE
         elif action == 2 and col > 0 and self.grid[row][col - 1] == EMPTY and not is_cell_occupied_by_another_agent(row, col - 1):  # LEFT
             self.agent_positions[agent_index] = (row, col - 1)
-            self.scores[agent_index] -= 1
-            return 1
+            self.scores[agent_index] += REWARD_CORRECT_MOVE
+            return REWARD_CORRECT_MOVE
         elif action == 3 and col < COLS - 1 and self.grid[row][col + 1] == EMPTY and not is_cell_occupied_by_another_agent(row, col + 1):  # RIGHT
             self.agent_positions[agent_index] = (row, col + 1)
-            self.scores[agent_index] -= 1
-            return 1
-        elif action == 4:  # PLACE_BOMB
-            self.bombs.append({"row": row, "col": col, "timer": 3, "owner": agent_index})
+            self.scores[agent_index] += REWARD_CORRECT_MOVE
+            return REWARD_CORRECT_MOVE
+        # elif action == 4:  # PLACE_BOMB
+        #     self.bombs.append({"row": row, "col": col, "timer": 3, "owner": agent_index})
+        #     self.grid[row][col] = BOMB
+        #     self.scores[agent_index] -= 10
+        #     return 0
+        elif action == 4:
+            new_bomb = Bomb(row, col, agent_index)
+            self.bombs.append(new_bomb)
             self.grid[row][col] = BOMB
-            self.scores[agent_index] -= 10
-            return 0
+            return REWARD_CORRECT_MOVE
         elif action == 5:
             self.agent_positions[agent_index] = (row, col)
             self.scores[agent_index] -= 1
-            return 0
-        return -10  # Récompense négative pour une action invalide
+            return REWARD_CORRECT_MOVE
+        return REWARD_INCORRECT_MOVE  # Récompense négative pour une action invalide
 
     def explode_bomb(self, bomb):
         """Gère l'explosion d'une bombe."""
-        row, col = bomb["row"], bomb["col"]
+        row, col = bomb.row, bomb.col
         affected_positions = [(row, col)]  # Add the bomb's position as affected
 
         for dr, dc in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
-            for i in range(1, 3):  # Explosion range
+            for i in range(1, bomb.power+1):  # Explosion range
                 r, c = row + dr * i, col + dc * i
                 if 0 <= r < ROWS and 0 <= c < COLS:
                     if self.grid[r][c] == INDESTRUCTIBLE:
@@ -146,6 +153,8 @@ class BombermanGame(arcade.Window):
                     affected_positions.append((r, c))
                     if self.grid[r][c] == DESTRUCTIBLE:
                         self.grid[r][c] = EMPTY
+                        self.scores[bomb.owner] += REWARD_DESTROY_OBJECT
+                        print(f"Agent {bomb.owner+1} destroyed something !!! {REWARD_DESTROY_OBJECT} pts")
                         break
 
         # Mark affected positions for explosions
@@ -155,8 +164,15 @@ class BombermanGame(arcade.Window):
         for i, (arow, acol) in enumerate(self.agent_positions):
             if (arow, acol) in affected_positions and not self.game_over[i]:
                 self.lives[i] -= 1
-                self.scores[i] -= 1000
-                print(f"Agent {i+1} died in an explosion")
+                self.scores[i] += REWARD_DEATH
+                #print(f"Agent {i+1} died in an explosion, killed by agent {bomb.owner+1}")
+                if i == bomb.owner:
+                    print(f"Agent {i+1} killed himself !!! {REWARD_SUICIDE} pts")
+                    self.scores[i] += REWARD_SUICIDE
+                else:
+                    print(f"Agent {i+1} got killed by agent {bomb.owner+1} !!! {REWARD_KILL} pts")
+                    self.scores[bomb.owner] += REWARD_KILL
+
                 if self.lives[i] <= 0:
                     self.game_over[i] = True
 
@@ -167,6 +183,8 @@ class BombermanGame(arcade.Window):
     def on_draw(self):
         """Affiche la grille et les statistiques."""
         self.clear()
+        # for bomb in self.bombs:
+        #     print(f"Bom exploding in {bomb.timer} at {bomb.col} {bomb.row}")
 
         # Clear explosion positions at the start of each frame
         self.explosion_positions = []
@@ -193,20 +211,37 @@ class BombermanGame(arcade.Window):
 
         # Draw bombs
         for bomb in self.bombs:
-            x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
-            y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
-            color = bomb.get("color",
-                             arcade.color.ASH_GREY)  # Default to gray, change to orange and red before explosion
+            x = bomb.col * CELL_SIZE + CELL_SIZE // 2
+            y = bomb.row * CELL_SIZE + CELL_SIZE // 2
+
+            if bomb.timer == 1:
+                color = arcade.color.RED
+            elif bomb.timer == 2:
+                color = arcade.color.ORANGE
+            else:
+                color = arcade.color.ASH_GREY
+
             arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
 
-        # Draw red diamonds on explosion positions for this frame only
-        for (row, col) in self.explosion_positions:
-            x = col * CELL_SIZE + CELL_SIZE // 2
-            y = row * CELL_SIZE + CELL_SIZE // 2
-            arcade.draw_polygon_filled(
-                [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
-                arcade.color.RED
-            )
+            if bomb.timer == 0:
+                arcade.draw_polygon_filled(
+                         [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
+                         arcade.color.RED)
+        # for bomb in self.bombs:
+        #     x = bomb["col"] * CELL_SIZE + CELL_SIZE // 2
+        #     y = bomb["row"] * CELL_SIZE + CELL_SIZE // 2
+        #     color = bomb.get("color",
+        #                      arcade.color.ASH_GREY)  # Default to gray, change to orange and red before explosion
+        #     arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+        #
+        # # Draw red diamonds on explosion positions for this frame only
+        # for (row, col) in self.explosion_positions:
+        #     x = col * CELL_SIZE + CELL_SIZE // 2
+        #     y = row * CELL_SIZE + CELL_SIZE // 2
+        #     arcade.draw_polygon_filled(
+        #         [(x, y - CELL_SIZE // 4), (x + CELL_SIZE // 4, y), (x, y + CELL_SIZE // 4), (x - CELL_SIZE // 4, y)],
+        #         arcade.color.RED
+        #     )
 
         # Draw scores and lives
         for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
@@ -221,14 +256,21 @@ class BombermanGame(arcade.Window):
         self.time_accumulator = 0
 
         for bomb in self.bombs[:]:
-            bomb["timer"] -= self.update_interval
-            if bomb["timer"] <= 2:  # Change bomb color to orange just before red
-                bomb["color"] = arcade.color.ORANGE  # Change to orange
-            if bomb["timer"] <= 1:  # Change to red just before explosion
-                bomb["color"] = arcade.color.RED  # Change to red
-            if bomb["timer"] <= 0:
+            bomb.timer -= 1
+            #bomb.timer -= self.update_interval
+            if bomb.timer <= 0:
                 self.explode_bomb(bomb)
                 self.bombs.remove(bomb)
+
+        # for bomb in self.bombs[:]:
+        #     bomb["timer"] -= self.update_interval
+        #     if bomb["timer"] <= 2:  # Change bomb color to orange just before red
+        #         bomb["color"] = arcade.color.ORANGE  # Change to orange
+        #     if bomb["timer"] <= 1:  # Change to red just before explosion
+        #         bomb["color"] = arcade.color.RED  # Change to red
+        #     if bomb["timer"] <= 0:
+        #         self.explode_bomb(bomb)
+        #         self.bombs.remove(bomb)
 
         for i in range(self.num_agents):
             if self.game_over[i]:
@@ -241,7 +283,12 @@ class BombermanGame(arcade.Window):
 
         # Check if exactly one agent has game_over == False or if all agents are game_over == True
         if self.game_over.count(False) == 1 or all(self.game_over):
-            print(f"Partie {self.current_episode + 1} terminé. Réinitialisation du jeu.\n")
+            print(f"Partie {self.current_episode + 1} terminé. Réinitialisation du jeu.")
+            i = 0
+            print(f"Final Scores:")
+            for _ in self.agents:
+                i += 1
+                print(f"\tAgent {i}: {self.scores[i-1]}")
             self.current_episode += 1
             for i, agent in enumerate(self.agents):
                 agent.save_q_table(f"agent_{i + 1}_qtable.npy")
