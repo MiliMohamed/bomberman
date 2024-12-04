@@ -4,12 +4,16 @@ from agent import QLearningAgent, REWARD_DEATH, REWARD_CORRECT_MOVE, REWARD_INCO
     REWARD_DESTROY_OBJECT
 from bomb import Bomb
 
+MAP_FILE_1 = "./map/map_1"
+
 # Dimensions de la fenêtre
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 CELL_SIZE = 40 # 40 default
-ROWS = SCREEN_HEIGHT // CELL_SIZE
-COLS = SCREEN_WIDTH // CELL_SIZE
+#ROWS = SCREEN_HEIGHT // CELL_SIZE
+#COLS = SCREEN_WIDTH // CELL_SIZE
+ROWS = open(MAP_FILE_1).read().count('\n')+1
+COLS = 21
 
 # Types de cellules
 EMPTY = 0
@@ -18,6 +22,7 @@ INDESTRUCTIBLE = 2
 BOMB = 3
 ITEM = 4
 ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB", "WAIT"]
+
 
 class BombermanGame(arcade.Window):
     def __init__(self, num_agents=4, max_episodes=1000):
@@ -46,29 +51,98 @@ class BombermanGame(arcade.Window):
         for i, agent in enumerate(self.agents):
             agent.load_q_table(f"agent_{i+1}_qtable.npy")
 
+    # def setup(self):
+    #     """Initialisation du jeu."""
+    #     self.grid = []
+    #
+    #     # Define a "buffer zone" around agent spawn positions (for example, 3x3 area around each spawn point)
+    #     buffer_zone_size = 1
+    #
+    #     # Create the grid with obstacles while leaving space around the agent spawn points
+    #     for row in range(ROWS):
+    #         row_data = []
+    #         for col in range(COLS):
+    #             # Set a condition for leaving empty space around spawn points
+    #             if any(
+    #                     (spawn_row - buffer_zone_size <= row <= spawn_row + buffer_zone_size and
+    #                      spawn_col - buffer_zone_size <= col <= spawn_col + buffer_zone_size)
+    #                     for spawn_row, spawn_col in self.agent_positions
+    #             ):
+    #                 row_data.append(EMPTY)  # Leave space around spawn points
+    #             elif random.random() < 0.2:
+    #                 row_data.append(DESTRUCTIBLE if random.random() < 0.7 else INDESTRUCTIBLE)
+    #             else:
+    #                 row_data.append(EMPTY)
+    #         self.grid.append(row_data)
+    #
+    #     # Spawn agents in the corners but leave a buffer zone
+    #     corners = [(0, 0), (0, COLS - 1), (ROWS - 1, 0), (ROWS - 1, COLS - 1)]
+    #     self.agent_positions = []
+    #
+    #     # Assign each agent to a corner while ensuring the buffer zone is respected
+    #     for i in range(self.num_agents):
+    #         corner = corners[i % len(corners)]  # This ensures we reuse corners if more than 4 agents
+    #         self.agent_positions.append(corner)
+    #
+    #         # Ensure a buffer zone around each spawn position (mark the grid with empty space)
+    #         for r in range(corner[0] - buffer_zone_size, corner[0] + buffer_zone_size + 1):
+    #             for c in range(corner[1] - buffer_zone_size, corner[1] + buffer_zone_size + 1):
+    #                 if 0 <= r < ROWS and 0 <= c < COLS:
+    #                     self.grid[r][c] = EMPTY  # Clear any obstacles in the buffer zone
+    #
+    #     self.scores = [0] * self.num_agents
+    #     self.lives = [1] * self.num_agents
+    #     self.bombs = []
+    #     self.game_over = [False] * self.num_agents  # Reset game_over list
+
     def setup(self):
         """Initialisation du jeu."""
         self.grid = []
 
-        # Define a "buffer zone" around agent spawn positions (for example, 3x3 area around each spawn point)
-        buffer_zone_size = 1
+        # Open the map file and read its content
+        with open(MAP_FILE_1, 'r') as map_file:
+            map_level = map_file.readlines()
 
-        # Create the grid with obstacles while leaving space around the agent spawn points
-        for row in range(ROWS):
+        # Print each line of the map
+        for row in map_level:
             row_data = []
-            for col in range(COLS):
-                # Set a condition for leaving empty space around spawn points
-                if any(
-                        (spawn_row - buffer_zone_size <= row <= spawn_row + buffer_zone_size and
-                         spawn_col - buffer_zone_size <= col <= spawn_col + buffer_zone_size)
-                        for spawn_row, spawn_col in self.agent_positions
-                ):
-                    row_data.append(EMPTY)  # Leave space around spawn points
-                elif random.random() < 0.2:
-                    row_data.append(DESTRUCTIBLE if random.random() < 0.7 else INDESTRUCTIBLE)
-                else:
+            for char in row.strip():
+                if char == 'I':
+                    row_data.append(DESTRUCTIBLE)
+                elif char == '.':
                     row_data.append(EMPTY)
+                elif char == 'X':
+                    row_data.append(INDESTRUCTIBLE)
+                else:
+                    raise ValueError(f"Invalid character '{char}' in the map file.")
+            #print(row.strip())  # Use .strip() to remove the newline character at the end of each line
             self.grid.append(row_data)
+
+
+
+        # # Define a "buffer zone" around agent spawn positions (for example, 3x3 area around each spawn point)
+        # buffer_zone_size = 1
+        #
+        # # Create the grid with obstacles while leaving space around the agent spawn points
+        # for row in range(ROWS):
+        #     row_data = []
+        #     for col in range(COLS):
+        #         # Set a condition for leaving empty space around spawn points
+        #         if any(
+        #                 (spawn_row - buffer_zone_size <= row <= spawn_row + buffer_zone_size and
+        #                  spawn_col - buffer_zone_size <= col <= spawn_col + buffer_zone_size)
+        #                 for spawn_row, spawn_col in self.agent_positions
+        #         ):
+        #             row_data.append(EMPTY)  # Leave space around spawn points
+        #         elif random.random() < 0.2:
+        #             row_data.append(DESTRUCTIBLE if random.random() < 0.7 else INDESTRUCTIBLE)
+        #         else:
+        #             row_data.append(EMPTY)
+        #     self.grid.append(row_data)
+        #
+        #
+        #
+        #
 
         # Spawn agents in the corners but leave a buffer zone
         corners = [(0, 0), (0, COLS - 1), (ROWS - 1, 0), (ROWS - 1, COLS - 1)]
@@ -79,16 +153,17 @@ class BombermanGame(arcade.Window):
             corner = corners[i % len(corners)]  # This ensures we reuse corners if more than 4 agents
             self.agent_positions.append(corner)
 
-            # Ensure a buffer zone around each spawn position (mark the grid with empty space)
-            for r in range(corner[0] - buffer_zone_size, corner[0] + buffer_zone_size + 1):
-                for c in range(corner[1] - buffer_zone_size, corner[1] + buffer_zone_size + 1):
-                    if 0 <= r < ROWS and 0 <= c < COLS:
-                        self.grid[r][c] = EMPTY  # Clear any obstacles in the buffer zone
+            # # Ensure a buffer zone around each spawn position (mark the grid with empty space)
+            # for r in range(corner[0] - buffer_zone_size, corner[0] + buffer_zone_size + 1):
+            #     for c in range(corner[1] - buffer_zone_size, corner[1] + buffer_zone_size + 1):
+            #         if 0 <= r < ROWS and 0 <= c < COLS:
+            #             self.grid[r][c] = EMPTY  # Clear any obstacles in the buffer zone
 
         self.scores = [0] * self.num_agents
         self.lives = [1] * self.num_agents
         self.bombs = []
         self.game_over = [False] * self.num_agents  # Reset game_over list
+
 
     def get_state(self, agent_index):
         """Convertit la position actuelle d'un agent en un état unique."""
@@ -99,6 +174,9 @@ class BombermanGame(arcade.Window):
         """Effectue une action pour un agent."""
         if self.game_over[agent_index]:
             return REWARD_DEATH  # Pénalité pour agent mort
+
+        if agent_index == 2:
+            return REWARD_CORRECT_MOVE
 
         row, col = self.agent_positions[agent_index]
 
@@ -155,7 +233,7 @@ class BombermanGame(arcade.Window):
                     if self.grid[r][c] == DESTRUCTIBLE:
                         self.grid[r][c] = EMPTY
                         self.scores[bomb.owner] += REWARD_DESTROY_OBJECT
-                        print(f"Agent {bomb.owner+1} destroyed something !!! {REWARD_DESTROY_OBJECT} pts")
+                        #print(f"Agent {bomb.owner+1} destroyed something !!! {REWARD_DESTROY_OBJECT} pts")
                         break
 
         # Mark affected positions for explosions
@@ -168,10 +246,10 @@ class BombermanGame(arcade.Window):
                 self.scores[i] += REWARD_DEATH
                 #print(f"Agent {i+1} died in an explosion, killed by agent {bomb.owner+1}")
                 if i == bomb.owner:
-                    print(f"Agent {i+1} killed himself !!! {REWARD_SUICIDE} pts")
+                    #print(f"Agent {i+1} killed himself !!! {REWARD_SUICIDE} pts")
                     self.scores[i] += REWARD_SUICIDE
                 else:
-                    print(f"Agent {i+1} got killed by agent {bomb.owner+1} !!! {REWARD_KILL} pts")
+                    #print(f"Agent {i+1} got killed by agent {bomb.owner+1} !!! {REWARD_KILL} pts")
                     self.scores[bomb.owner] += REWARD_KILL
 
                 if self.lives[i] <= 0:
@@ -343,6 +421,34 @@ class BombermanGame(arcade.Window):
             arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
                              10, SCREEN_HEIGHT - 20 * (i + 1), arcade.color.WHITE, font_size=12)
 
+        # Draw alpha, gamma, and epsilon values in the top right corner
+        alpha_text = f"Alpha: {self.agents[0].alpha}"
+        gamma_text = f"Gamma: {self.agents[0].gamma}"
+        epsilon_text = f"Epsilon: {self.agents[0].epsilon}"
+        generation_text = f"Generation #{self.current_episode + 1}"
+
+
+        # Draw each text line
+        arcade.draw_text(alpha_text,
+                         SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
+                         SCREEN_HEIGHT - 20,  # 20 pixels from the top edge
+                         arcade.color.WHITE, font_size=12)
+
+        arcade.draw_text(gamma_text,
+                         SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
+                         SCREEN_HEIGHT - 40,  # 40 pixels from the top edge
+                         arcade.color.WHITE, font_size=12)
+
+        arcade.draw_text(epsilon_text,
+                         SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
+                         SCREEN_HEIGHT - 60,  # 60 pixels from the top edge
+                         arcade.color.WHITE, font_size=12)
+
+        arcade.draw_text(generation_text,
+                         SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
+                         SCREEN_HEIGHT - 80,  # 60 pixels from the top edge
+                         arcade.color.WHITE, font_size=12)
+
     def on_update(self, delta_time):
         """Met à jour l'état du jeu."""
         self.time_accumulator += delta_time
@@ -379,13 +485,15 @@ class BombermanGame(arcade.Window):
 
         # Check if exactly one agent has game_over == False or if all agents are game_over == True
         if self.game_over.count(False) == 1 or all(self.game_over):
-            print(f"Partie {self.current_episode + 1} terminé. Réinitialisation du jeu.")
+            print(self.agents[0].q_table)
+            #print(f"Partie {self.current_episode + 1} terminé. Réinitialisation du jeu.")
             i = 0
-            print(f"Final Scores:")
+            #print(f"Final Scores:")
             for _ in self.agents:
                 i += 1
-                print(f"\tAgent {i}: {self.scores[i-1]}")
+                #print(f"\tAgent {i}: {self.scores[i-1]}")
             self.current_episode += 1
             for i, agent in enumerate(self.agents):
                 agent.save_q_table(f"agent_{i + 1}_qtable.npy")
             self.setup()
+

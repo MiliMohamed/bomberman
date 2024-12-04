@@ -3,7 +3,7 @@ import numpy as np
 Q_TABLE_LOCATION = "./q_table/"
 
 REWARD_CORRECT_MOVE = 1          # Positive reward for a valid move
-REWARD_INCORRECT_MOVE = -10      # Negative reward for an invalid move
+REWARD_INCORRECT_MOVE = -10      # Negative reward for an invalid move e.g.: moving against a wall
 REWARD_DEATH = -1000             # Large negative reward for dying
 REWARD_SUICIDE = -1500           # Larger negative reward for committing suicide
 REWARD_KILL = 1000               # Large positive reward for killing another agent
@@ -11,13 +11,13 @@ REWARD_DESTROY_OBJECT = 50       # Positive reward for destroying an object
 
 
 class QLearningAgent:
-    def __init__(self, state_size, action_size, alpha=0.5, gamma=0.99, epsilon=1, agent_id=0):
+    def __init__(self, state_size, action_size, alpha=0.1, gamma=0.9, epsilon=0.9, agent_id=0):
         self.state_size = state_size
         self.action_size = action_size
         self.q_table = np.zeros((state_size, action_size))  # Q-Table
-        self.alpha = alpha  # Taux d'apprentissage
-        self.gamma = gamma  # Facteur de réduction
-        self.epsilon = epsilon  # Taux d'exploration
+        self.alpha = alpha  # Taux d'apprentissage 0.01 0.1
+        self.gamma = gamma  # Facteur de réduction 0.9 0.99
+        self.epsilon = epsilon  # Taux d'exploration start at 1 then decay
         self.agent_id = agent_id  # Identifiant de l'agent
 
     def choose_action(self, state):
