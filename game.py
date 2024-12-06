@@ -7,7 +7,7 @@ from bomb import Bomb
 MAP_FILE_1 = "./map/map_1"
 
 # Dimensions de la fenêtre
-SCREEN_WIDTH = 800
+SCREEN_WIDTH = 840
 SCREEN_HEIGHT = 600
 CELL_SIZE = 40 # 40 default
 #ROWS = SCREEN_HEIGHT // CELL_SIZE
@@ -39,11 +39,11 @@ class BombermanGame(arcade.Window):
         self.current_episode = 0
         self.max_episodes = max_episodes
         self.time_accumulator = 0  # Pour ralentir la vitesse du jeu
-        self.update_interval = 0.1  # Temps entre chaque mise à jour (en secondes)
+        self.update_interval = 0.01  # Temps entre chaque mise à jour (en secondes)
 
         # Initialiser les agents Q-Learning
         self.agents = [
-            QLearningAgent(state_size=ROWS * COLS, action_size=len(ACTIONS), agent_id=i)
+            QLearningAgent(state_size=ROWS * COLS * 5**4, action_size=len(ACTIONS), agent_id=i)
             for i in range(num_agents)
         ]
 
@@ -164,11 +164,33 @@ class BombermanGame(arcade.Window):
         self.bombs = []
         self.game_over = [False] * self.num_agents  # Reset game_over list
 
-
+    # TODO add radar + align with bomb
     def get_state(self, agent_index):
-        """Convertit la position actuelle d'un agent en un état unique."""
+        # """Convertit la position actuelle d'un agent en un état unique."""
+        # row, col = self.agent_positions[agent_index]
+        # #print(f"State of agent {agent_index} = {row * COLS + col}")
+        # #return row * COLS + col
+        # return [row, col]
+
+        """Convert the current position of an agent into a radar view state."""
         row, col = self.agent_positions[agent_index]
-        return row * COLS + col
+
+        # Define the radar range (1 for 3x3 grid)
+        radar_range = 1
+
+        # Initialize the radar view with the surrounding cells
+        radar_view = []
+        for dr in range(-radar_range, radar_range + 1):
+            radar_row = []
+            for dc in range(-radar_range, radar_range + 1):
+                r, c = row + dr, col + dc
+                if 0 <= r < ROWS and 0 <= c < COLS:
+                    radar_row.append(self.grid[r][c])
+                else:
+                    radar_row.append(-1)  # Out of bounds
+            radar_view.append(radar_row)
+
+        return radar_view
 
     def perform_action(self, agent_index, action):
         """Effectue une action pour un agent."""
@@ -208,13 +230,15 @@ class BombermanGame(arcade.Window):
         #     self.scores[agent_index] -= 10
         #     return 0
         elif action == 4:
+            if self.grid[row][col] == BOMB:
+                return REWARD_INCORRECT_MOVE
             new_bomb = Bomb(row, col, agent_index)
             self.bombs.append(new_bomb)
             self.grid[row][col] = BOMB
             return REWARD_CORRECT_MOVE
         elif action == 5:
             self.agent_positions[agent_index] = (row, col)
-            self.scores[agent_index] -= 1
+            self.scores[agent_index] += REWARD_CORRECT_MOVE
             return REWARD_CORRECT_MOVE
         return REWARD_INCORRECT_MOVE  # Récompense négative pour une action invalide
 
@@ -439,10 +463,10 @@ class BombermanGame(arcade.Window):
                          SCREEN_HEIGHT - 40,  # 40 pixels from the top edge
                          arcade.color.WHITE, font_size=12)
 
-        arcade.draw_text(epsilon_text,
-                         SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
-                         SCREEN_HEIGHT - 60,  # 60 pixels from the top edge
-                         arcade.color.WHITE, font_size=12)
+        # arcade.draw_text(epsilon_text,
+        #                  SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
+        #                  SCREEN_HEIGHT - 60,  # 60 pixels from the top edge
+        #                  arcade.color.WHITE, font_size=12)
 
         arcade.draw_text(generation_text,
                          SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
@@ -474,14 +498,23 @@ class BombermanGame(arcade.Window):
         #         self.explode_bomb(bomb)
         #         self.bombs.remove(bomb)
 
+        temp = 0
         for i in range(self.num_agents):
             if self.game_over[i]:
                 continue
             current_state = self.get_state(i)
             action = self.agents[i].choose_action(current_state)
+            temp = action
+
+
             reward = self.perform_action(i, action)
             next_state = self.get_state(i)
             self.agents[i].update(current_state, action, reward, next_state)
+            if i == 0:
+                print(f"\nAgent {i+1}:\n\tCurrent State: {current_state}\n\tAction: {action} {ACTIONS[action]}\n\tReward: {reward}\n\tNext State: {next_state}")
+
+        # print(f"\n{temp}")
+        # print(f"\tState : {self.get_state(0)}\n\tAction : {ACTIONS[action]}")
 
         # Check if exactly one agent has game_over == False or if all agents are game_over == True
         if self.game_over.count(False) == 1 or all(self.game_over):

@@ -11,7 +11,7 @@ REWARD_DESTROY_OBJECT = 50       # Positive reward for destroying an object
 
 
 class QLearningAgent:
-    def __init__(self, state_size, action_size, alpha=0.1, gamma=0.9, epsilon=0.9, agent_id=0):
+    def __init__(self, state_size, action_size, alpha=0.5, gamma=0.9, epsilon=0.7, agent_id=0):
         self.state_size = state_size
         self.action_size = action_size
         self.q_table = np.zeros((state_size, action_size))  # Q-Table
@@ -21,10 +21,10 @@ class QLearningAgent:
         self.agent_id = agent_id  # Identifiant de l'agent
 
     def choose_action(self, state):
-        """Choisit une action basée sur la politique epsilon-greedy."""
+        """Choisit une action basée sur la politique epsilon greedy."""
         if np.random.random() < self.epsilon:
             return np.random.randint(self.action_size)  # Action aléatoire
-        return np.argmax(self.q_table[state])  # Action optimale
+        return np.argmax(self.q_table[state]) % self.action_size  # Action optimale
 
     def update(self, state, action, reward, next_state):
         """Met à jour la Q-Table avec la règle Q-Learning."""
