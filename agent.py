@@ -19,6 +19,7 @@ class QLearningAgent:
         self.gamma = gamma  # Facteur de réduction 0.9 0.99
         self.epsilon = epsilon  # Taux d'exploration start at 1 then decay
         self.agent_id = agent_id  # Identifiant de l'agent
+        self.history = []
 
     def choose_action(self, state):
         """Choisit une action basée sur la politique epsilon greedy."""

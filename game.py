@@ -524,6 +524,9 @@ class BombermanGame(arcade.Window):
             #print(f"Final Scores:")
             for _ in self.agents:
                 i += 1
+                #self.agents[i-1].history += self.scores[0]
+                self.agents[i - 1].history.append(self.scores[0])
+
                 #print(f"\tAgent {i}: {self.scores[i-1]}")
             self.current_episode += 1
             for i, agent in enumerate(self.agents):
