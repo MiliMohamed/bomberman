@@ -1,6 +1,5 @@
 import threading
 import arcade
-import numpy as np
 from agent import QLearningAgent, Q_TABLE_LOCATION
 from game import BombermanGame
 import matplotlib.pyplot as plt
@@ -29,4 +28,4 @@ if __name__ == "__main__":
 
     # Run the game
     arcade.run()
-    print(np.load("./q_table/agent_1_qtable.npy"))
+    print(game.agents[0].q_table)

@@ -49,7 +49,7 @@ class BombermanGame(arcade.Window):
 
         # Charger les Q-Tables si disponibles
         for i, agent in enumerate(self.agents):
-            agent.load_q_table(f"agent_{i+1}_qtable.npy")
+            agent.load_q_table(f"agent_{i+1}_qtable.qtable")
 
     # def setup(self):
     #     """Initialisation du jeu."""
