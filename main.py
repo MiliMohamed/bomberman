@@ -15,7 +15,7 @@ def plot_graph(agent_history):
         ax.set_title("Agent History")
         ax.set_xlabel("Steps")
         ax.set_ylabel("Score")
-        plt.pause(0.1)  # Update the plot every 0.1 seconds
+        plt.pause(1)
 
 
 if __name__ == "__main__":
@@ -29,3 +29,4 @@ if __name__ == "__main__":
 
     # Run the game
     arcade.run()
+    print(np.load("./q_table/agent_1_qtable.npy"))

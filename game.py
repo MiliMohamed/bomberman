@@ -199,7 +199,7 @@ class BombermanGame(arcade.Window):
         else:
             below = self.grid[row+1][col]
 
-        return [position, above, below, left, right]
+        return (position, above, below, left, right)
 
         # # Initialize the radar view with the surrounding cells
         # radar_view = []
@@ -379,6 +379,12 @@ class BombermanGame(arcade.Window):
     #         arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
     #                          10, SCREEN_HEIGHT - 20 * (i + 1), arcade.color.WHITE, font_size=12)
 
+
+    def create_sprite(self, resource, row, col):
+        sprite = arcade.Sprite(resource, 0.3)
+        sprite.center_x, sprite.center_y = col * CELL_SIZE + 0.5 * CELL_SIZE, row * CELL_SIZE + 0.5 * CELL_SIZE
+        return sprite
+
     def on_draw(self):
         """Affiche la grille et les statistiques."""
         self.clear()
@@ -390,9 +396,12 @@ class BombermanGame(arcade.Window):
                 x = col * CELL_SIZE + CELL_SIZE // 2
                 y = row * CELL_SIZE + CELL_SIZE // 2
                 if self.grid[row][col] == DESTRUCTIBLE:
-                    arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.RED)
+                    #arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.RED)
+                    self.create_sprite(':resources:images/tiles/boxCrate_double.png', row, col).draw()
+
                 elif self.grid[row][col] == INDESTRUCTIBLE:
-                    arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.GRAY)
+                    self.create_sprite(':resources:images/tiles/brickGrey.png', row, col).draw()
+                    #arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.GRAY)
                 else:
                     arcade.draw_rectangle_filled(x, y, CELL_SIZE, CELL_SIZE, arcade.color.BLACK)
                     arcade.draw_rectangle_outline(x, y, CELL_SIZE, CELL_SIZE, arcade.color.WHITE)
@@ -411,16 +420,23 @@ class BombermanGame(arcade.Window):
             y = bomb.row * CELL_SIZE + CELL_SIZE // 2
 
             if bomb.timer == 1:
-                color = arcade.color.RED
-                arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+                #color = arcade.color.RED
+                #arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+                self.create_sprite(':resources:images/tiles/bomb.png', bomb.row, bomb.col).draw()
+
+
             elif bomb.timer == 2:
-                color = arcade.color.ORANGE
-                arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+                # color = arcade.color.ORANGE
+                # arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+                self.create_sprite(':resources:images/tiles/bomb.png', bomb.row, bomb.col).draw()
+
             elif bomb.timer == 0:
                 pass  # Explosion will be drawn below
             else:
-                color = arcade.color.ASH_GREY
-                arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+                #color = arcade.color.ASH_GREY
+                #arcade.draw_circle_filled(x, y, CELL_SIZE // 4, color)
+                self.create_sprite(':resources:images/tiles/bomb.png', bomb.row, bomb.col).draw()
+
 
             # When the bomb explodes, draw explosion
             if bomb.timer == 0:

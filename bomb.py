@@ -1,5 +1,5 @@
 class Bomb:
-    def __init__(self, row, col, owner, timer=5, power=1):
+    def __init__(self, row, col, owner, timer=20, power=1):
         self.row = row
         self.col = col
         self.owner = owner
