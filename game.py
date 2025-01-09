@@ -174,30 +174,53 @@ class BombermanGame(arcade.Window):
 
         """Convert the current position of an agent into a radar view state."""
         row, col = self.agent_positions[agent_index]
+        position = self.grid[row][col]
 
         # Define the radar range (1 for 3x3 grid)
         radar_range = 1
 
-        # Initialize the radar view with the surrounding cells
-        radar_view = []
-        for dr in range(-radar_range, radar_range + 1):
-            radar_row = []
-            for dc in range(-radar_range, radar_range + 1):
-                r, c = row + dr, col + dc
-                if 0 <= r < ROWS and 0 <= c < COLS:
-                    radar_row.append(self.grid[r][c])
-                else:
-                    radar_row.append(-1)  # Out of bounds
-            radar_view.append(radar_row)
+        if row-1 < 0:
+            above = 2
+        else:
+            above = self.grid[row-1][col]
 
-        return radar_view
+        if col+1 > len(self.grid):
+            right = 2
+        else:
+            right = self.grid[row][col+1]
+
+        if col-1 < 0:
+            left = 2
+        else:
+            left = self.grid[row][col-1]
+
+        if row+1 > len(self.grid[0]):
+            below = 2
+        else:
+            below = self.grid[row+1][col]
+
+        return [position, above, below, left, right]
+
+        # # Initialize the radar view with the surrounding cells
+        # radar_view = []
+        # for dr in range(-radar_range, radar_range + 1):
+        #     radar_row = []
+        #     for dc in range(-radar_range, radar_range + 1):
+        #         r, c = row + dr, col + dc
+        #         if 0 <= r < ROWS and 0 <= c < COLS:
+        #             radar_row.append(self.grid[r][c])
+        #         else:
+        #             radar_row.append(-1)  # Out of bounds
+        #     radar_view.append(radar_row)
+        # #print(f"radar view: {radar_view}")
+        # return radar_view
 
     def perform_action(self, agent_index, action):
         """Effectue une action pour un agent."""
         if self.game_over[agent_index]:
             return REWARD_DEATH  # Pénalité pour agent mort
 
-        if agent_index == 2:
+        if agent_index >= 1:
             return REWARD_CORRECT_MOVE
 
         row, col = self.agent_positions[agent_index]
@@ -463,10 +486,10 @@ class BombermanGame(arcade.Window):
                          SCREEN_HEIGHT - 40,  # 40 pixels from the top edge
                          arcade.color.WHITE, font_size=12)
 
-        # arcade.draw_text(epsilon_text,
-        #                  SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
-        #                  SCREEN_HEIGHT - 60,  # 60 pixels from the top edge
-        #                  arcade.color.WHITE, font_size=12)
+        arcade.draw_text(epsilon_text,
+                         SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
+                         SCREEN_HEIGHT - 60,  # 60 pixels from the top edge
+                         arcade.color.WHITE, font_size=12)
 
         arcade.draw_text(generation_text,
                          SCREEN_WIDTH - 140 - 10,  # Position text 10 pixels from the right edge
@@ -511,14 +534,16 @@ class BombermanGame(arcade.Window):
             next_state = self.get_state(i)
             self.agents[i].update(current_state, action, reward, next_state)
             if i == 0:
-                print(f"\nAgent {i+1}:\n\tCurrent State: {current_state}\n\tAction: {action} {ACTIONS[action]}\n\tReward: {reward}\n\tNext State: {next_state}")
+                continue
+                #print()
+                #print(f"\nAgent {i+1}:\n\tCurrent State: {current_state}\n\tAction: {action} {ACTIONS[action]}\n\tReward: {reward}\n\tNext State: {next_state}")
 
         # print(f"\n{temp}")
         # print(f"\tState : {self.get_state(0)}\n\tAction : {ACTIONS[action]}")
 
         # Check if exactly one agent has game_over == False or if all agents are game_over == True
         if self.game_over.count(False) == 1 or all(self.game_over):
-            print(self.agents[0].q_table)
+            #print(self.agents[0].q_table)
             #print(f"Partie {self.current_episode + 1} terminé. Réinitialisation du jeu.")
             i = 0
             #print(f"Final Scores:")
