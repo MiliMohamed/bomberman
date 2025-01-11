@@ -18,7 +18,7 @@ class QLearningAgent:
     def __init__(self, state_size, action_size, alpha=0.95, gamma=0.5, epsilon=1, agent_id=0):
         self.state_size = state_size
         self.action_size = action_size
-        self.q_table = QTable() #np.zeros((state_size, action_size))  # Q-Table
+        self.q_table = QTable()
         self.alpha = alpha  # Taux d'apprentissage 0.01 0.1
         self.gamma = gamma  # Facteur de réduction 0.9 0.99
         self.epsilon = epsilon  # Taux d'exploration start at 1 then decay

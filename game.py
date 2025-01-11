@@ -217,8 +217,9 @@ class BombermanGame(arcade.Window):
 
     def perform_action(self, agent_index, action):
         """Effectue une action pour un agent."""
+        print(f"perform_action() Agent {agent_index+1} perform {action}")
         if self.game_over[agent_index]:
-            return REWARD_DEATH  # Pénalité pour agent mort
+            return REWARD_DEATH
 
         if agent_index >= 1:
             return REWARD_CORRECT_MOVE
@@ -263,6 +264,8 @@ class BombermanGame(arcade.Window):
             self.agent_positions[agent_index] = (row, col)
             self.scores[agent_index] += REWARD_CORRECT_MOVE
             return REWARD_CORRECT_MOVE
+        else:
+            print(f"Action {action} is not a correct move")
         return REWARD_INCORRECT_MOVE  # Récompense négative pour une action invalide
 
     def explode_bomb(self, bomb):
@@ -378,7 +381,6 @@ class BombermanGame(arcade.Window):
     #     for i, (score, lives) in enumerate(zip(self.scores, self.lives)):
     #         arcade.draw_text(f"Agent {i + 1} - Score: {score}, Lives: {lives}",
     #                          10, SCREEN_HEIGHT - 20 * (i + 1), arcade.color.WHITE, font_size=12)
-
 
     def create_sprite(self, resource, row, col):
         sprite = arcade.Sprite(resource, 0.3)
@@ -543,10 +545,10 @@ class BombermanGame(arcade.Window):
                 continue
             current_state = self.get_state(i)
             action = self.agents[i].choose_action(current_state)
+            # print(f"on_update() Agent {i+1} actions is {action}")
             temp = action
 
-
-            reward = self.perform_action(i, action)
+            reward = self.perform_action(i, ACTIONS.index(action))
             next_state = self.get_state(i)
             self.agents[i].update(current_state, action, reward, next_state)
             if i == 0:
@@ -571,6 +573,6 @@ class BombermanGame(arcade.Window):
                 #print(f"\tAgent {i}: {self.scores[i-1]}")
             self.current_episode += 1
             for i, agent in enumerate(self.agents):
-                agent.save_q_table(f"agent_{i + 1}_qtable.npy")
+                agent.save_q_table(f"agent_{i + 1}.qtable")
             self.setup()
 

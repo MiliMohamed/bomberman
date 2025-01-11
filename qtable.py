@@ -2,8 +2,10 @@ from random import *
 
 ACTIONS = ["UP", "DOWN", "LEFT", "RIGHT", "PLACE_BOMB", "WAIT"]
 
+
 def arg_max(table):
     return max(table, key=table.get)
+
 
 class QTable:
     def __init__(self, learning_rate=0.9, discount_factor=0.9):
@@ -13,9 +15,9 @@ class QTable:
 
     def set(self, state, action, reward, new_state):
         if state not in self.dic:
-            self.dic[state] = {ACTIONS[0]: 0, ACTIONS[1]: 0, ACTIONS[2]: 0, ACTIONS[3]: 0,ACTIONS[4]: 0, ACTIONS[5]: 0}
+            self.dic[state] = {ACTIONS[0]: 0, ACTIONS[1]: 0, ACTIONS[2]: 0, ACTIONS[3]: 0, ACTIONS[4]: 0, ACTIONS[5]: 0}
         if new_state not in self.dic:
-            self.dic[new_state] = {ACTIONS[0]: 0, ACTIONS[1]: 0, ACTIONS[2]: 0, ACTIONS[3]: 0,ACTIONS[4]: 0, ACTIONS[5]: 0}
+            self.dic[new_state] = {ACTIONS[0]: 0, ACTIONS[1]: 0, ACTIONS[2]: 0, ACTIONS[3]: 0, ACTIONS[4]: 0, ACTIONS[5]: 0}
 
         self.dic[state][action] += reward
 
